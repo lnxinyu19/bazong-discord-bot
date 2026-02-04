@@ -35,7 +35,7 @@ index b17b126..a1c2d3e 100644
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,17 +174,62 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,17 +174,68 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
@@ -92,15 +92,22 @@ index b17b126..a1c2d3e 100644
 +    }
 +
 +    if (!info.url) {
++      // Filter out storyboard formats (sb0, sb1, sb2, sb3) - they are just thumbnails
++      const playableFormats = info.formats?.filter(f => f.url && !f.format_id?.startsWith('sb')) || [];
++      console.log("[YtDlpPlugin] Playable formats (excluding storyboard):", playableFormats.length);
++
 +      // Try to get URL from formats array - prefer audio formats
-+      const format = info.formats?.find(f => f.url && f.acodec && f.acodec !== 'none')
-+        || info.formats?.find(f => f.url && (f.acodec !== 'none' || f.vcodec !== 'none'))
-+        || info.formats?.find(f => f.url);
++      const format = playableFormats.find(f => f.acodec && f.acodec !== 'none')
++        || playableFormats.find(f => f.acodec !== 'none' || f.vcodec !== 'none')
++        || playableFormats[0];
 +      if (format?.url) {
-+        console.log("[YtDlpPlugin] Using format:", format.format_id, "url exists:", !!format.url);
++        console.log("[YtDlpPlugin] Using format:", format.format_id, "acodec:", format.acodec, "vcodec:", format.vcodec);
 +        return format.url;
 +      }
-+      throw new import_distube.DisTubeError("YTDLP_ERROR", "No playable format found");
++
++      // If no playable format found with cookies, the cookies might be invalid
++      console.log("[YtDlpPlugin] No playable format found. Cookies may be expired or invalid.");
++      throw new import_distube.DisTubeError("YTDLP_ERROR", "No playable format found - cookies may be expired. Please update your cookies.");
 +    }
 +
 +    console.log("[YtDlpPlugin] Success, got stream URL");
