@@ -115,4 +115,12 @@ distube.on('error', (channel, error) => {
   console.error('DisTube 錯誤：', error);
 });
 
+distube.on('ffmpegDebug', (debug) => {
+  console.log('FFmpeg Debug:', debug);
+});
+
+distube.on('debug', (debug) => {
+  console.log('DisTube Debug:', debug);
+});
+
 client.login(process.env.DISCORD_TOKEN);
