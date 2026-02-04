@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..ff181cd 100644
+index b17b126..a1c2d3e 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -125,8 +125,10 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
@@ -35,7 +35,7 @@ index b17b126..ff181cd 100644
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,17 +174,26 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,17 +174,35 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
@@ -57,17 +57,26 @@ index b17b126..ff181cd 100644
 +    };
 +
 +    // Try without cookies first
-+    let info = await json(song.url, baseFlags).catch(() => null);
++    console.log("[YtDlpPlugin] Attempt 1: without cookies");
++    let firstError = null;
++    let info = await json(song.url, baseFlags).catch((e) => {
++      firstError = e;
++      console.log("[YtDlpPlugin] Attempt 1 failed:", e.message || e);
++      return null;
++    });
 +
 +    // Retry with cookies if failed
 +    if (!info && cookiesPath) {
++      console.log("[YtDlpPlugin] Attempt 2: with cookies");
 +      info = await json(song.url, { ...baseFlags, cookies: cookiesPath }).catch((e2) => {
++        console.log("[YtDlpPlugin] Attempt 2 failed:", e2.message || e2);
 +        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
 +      });
 +    } else if (!info) {
-+      throw new import_distube.DisTubeError("YTDLP_ERROR", "Failed to get stream URL");
++      throw new import_distube.DisTubeError("YTDLP_ERROR", `Failed to get stream URL: ${firstError?.message || firstError}`);
 +    }
 +
      if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
++    console.log("[YtDlpPlugin] Success, got stream URL");
      return info.url;
    }
