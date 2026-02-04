@@ -11,17 +11,19 @@ const path = require('path');
 // 從環境變數生成 cookies 檔案（用於 Zeabur 等 PaaS 平台）
 const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
 console.log('Cookies 檔案路徑:', cookiesPath);
-console.log('YOUTUBE_COOKIES 環境變數:', process.env.YOUTUBE_COOKIES ? `已設定 (${process.env.YOUTUBE_COOKIES.length} 字元)` : '未設定');
 
-if (process.env.YOUTUBE_COOKIES) {
+if (process.env.YOUTUBE_COOKIES_BASE64) {
+  // 使用 Base64 編碼的 cookies（推薦，可保留換行符）
+  const cookiesContent = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64, 'base64').toString('utf-8');
+  fs.writeFileSync(cookiesPath, cookiesContent);
+  console.log('已從 Base64 環境變數生成 cookies.txt');
+  console.log('cookies.txt 檔案大小:', fs.statSync(cookiesPath).size, 'bytes');
+  console.log('cookies.txt 前 200 字元:', cookiesContent.substring(0, 200));
+} else if (process.env.YOUTUBE_COOKIES) {
+  // 直接使用純文字 cookies
   fs.writeFileSync(cookiesPath, process.env.YOUTUBE_COOKIES);
   console.log('已從環境變數生成 cookies.txt');
-
-  // 驗證檔案是否成功寫入
-  if (fs.existsSync(cookiesPath)) {
-    const stats = fs.statSync(cookiesPath);
-    console.log('cookies.txt 檔案大小:', stats.size, 'bytes');
-  }
+  console.log('cookies.txt 檔案大小:', fs.statSync(cookiesPath).size, 'bytes');
 } else {
   console.log('警告: YOUTUBE_COOKIES 環境變數未設定，點歌功能可能無法使用');
 }
