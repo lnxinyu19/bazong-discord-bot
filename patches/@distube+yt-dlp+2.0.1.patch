@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..b5298c0 100644
+index b17b126..c997305 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -125,8 +125,10 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
@@ -35,7 +35,7 @@ index b17b126..b5298c0 100644
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,18 +174,41 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,18 +174,47 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
@@ -72,12 +72,18 @@ index b17b126..b5298c0 100644
 +      throw new import_distube.DisTubeError("YTDLP_ERROR", `${lastError?.stderr || lastError?.message || lastError}`);
 +    }
      if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
++    console.log("[YtDlpPlugin] info.url:", info.url ? "exists" : "undefined");
++    console.log("[YtDlpPlugin] Total formats:", info.formats?.length || 0);
++    console.log("[YtDlpPlugin] All format IDs:", info.formats?.map(f => f.format_id).join(", ") || "none");
 +    if (!info.url) {
 +      const playableFormats = info.formats?.filter(f => f.url && !f.format_id?.startsWith('sb')) || [];
++      console.log("[YtDlpPlugin] Playable formats (non-storyboard):", playableFormats.length);
++      console.log("[YtDlpPlugin] Playable format details:", playableFormats.map(f => ({ id: f.format_id, acodec: f.acodec, vcodec: f.vcodec, hasUrl: !!f.url })));
 +      const format = playableFormats.find(f => f.acodec && f.acodec !== 'none')
 +        || playableFormats.find(f => f.acodec !== 'none' || f.vcodec !== 'none')
 +        || playableFormats[0];
 +      if (format?.url) {
++        console.log("[YtDlpPlugin] Selected format:", format.format_id);
 +        return format.url;
 +      }
 +      throw new import_distube.DisTubeError("YTDLP_ERROR", "No playable format found - cookies may be expired");
