@@ -4,6 +4,12 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { DisTube } = require('distube');
 const { YtDlpPlugin } = require('@distube/yt-dlp');
 const ffmpegPath = require('ffmpeg-static');
+const { generateDependencyReport } = require('@discordjs/voice');
+
+// 輸出語音依賴報告
+console.log('=== Discord.js Voice 依賴報告 ===');
+console.log(generateDependencyReport());
+console.log('================================');
 
 const fs = require('fs');
 const path = require('path');
