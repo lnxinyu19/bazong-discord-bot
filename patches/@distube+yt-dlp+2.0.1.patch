@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..c09b2f8 100644
+index b17b126..6e0dec7 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -125,8 +125,10 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
@@ -35,12 +35,18 @@ index b17b126..c09b2f8 100644
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,18 +174,23 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,18 +174,31 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
 -    const info = await json(song.url, {
 +    console.log("[YtDlpPlugin] getStreamURL called for:", song.url);
++    console.log("[YtDlpPlugin] this.cookies value:", this.cookies);
++    console.log("[YtDlpPlugin] song.plugin.cookies value:", song.plugin?.cookies);
++
++    // 從 song.plugin 取得 cookies（因為 this 可能不正確）
++    const cookiesPath = this.cookies || song.plugin?.cookies;
++
 +    const flags = {
        dumpSingleJson: true,
        noWarnings: true,
@@ -52,9 +58,11 @@ index b17b126..c09b2f8 100644
 -    }).catch((e2) => {
 +      format: "bestaudio/best"
 +    };
-+    if (this.cookies) {
-+      flags.cookies = this.cookies;
-+      console.log("[YtDlpPlugin] Using cookies:", this.cookies);
++    if (cookiesPath) {
++      flags.cookies = cookiesPath;
++      console.log("[YtDlpPlugin] Using cookies:", cookiesPath);
++    } else {
++      console.log("[YtDlpPlugin] WARNING: No cookies available!");
 +    }
 +    const info = await json(song.url, flags).catch((e2) => {
 +      console.error("[YtDlpPlugin] getStreamURL error:", e2);
