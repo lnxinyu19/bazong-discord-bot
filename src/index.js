@@ -18,7 +18,19 @@ if (process.env.YOUTUBE_COOKIES_BASE64) {
   fs.writeFileSync(cookiesPath, cookiesContent);
   console.log('已從 Base64 環境變數生成 cookies.txt');
   console.log('cookies.txt 檔案大小:', fs.statSync(cookiesPath).size, 'bytes');
-  console.log('cookies.txt 前 200 字元:', cookiesContent.substring(0, 200));
+
+  // 檢查 cookies 內容
+  const lines = cookiesContent.split('\n');
+  console.log('cookies.txt 總行數:', lines.length);
+  console.log('cookies.txt 前 5 行:');
+  lines.slice(0, 5).forEach((line, i) => console.log(`  ${i + 1}: ${line}`));
+
+  // 檢查是否包含重要的 cookies
+  const importantCookies = ['LOGIN_INFO', 'SID', 'HSID', 'SSID', '__Secure-1PSID'];
+  importantCookies.forEach(name => {
+    const found = lines.some(line => line.includes(name));
+    console.log(`  ${name}: ${found ? '✓ 存在' : '✗ 不存在'}`);
+  });
 } else if (process.env.YOUTUBE_COOKIES) {
   // 直接使用純文字 cookies
   fs.writeFileSync(cookiesPath, process.env.YOUTUBE_COOKIES);
