@@ -14,7 +14,9 @@ console.log('Cookies 檔案路徑:', cookiesPath);
 
 if (process.env.YOUTUBE_COOKIES_BASE64) {
   // 使用 Base64 編碼的 cookies（推薦，可保留換行符）
-  const cookiesContent = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64, 'base64').toString('utf-8');
+  let cookiesContent = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64, 'base64').toString('utf-8');
+  // 確保使用 Unix 換行符 (LF)，避免 CRLF 導致 yt-dlp 解析失敗
+  cookiesContent = cookiesContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   fs.writeFileSync(cookiesPath, cookiesContent);
   console.log('已從 Base64 環境變數生成 cookies.txt');
   console.log('cookies.txt 檔案大小:', fs.statSync(cookiesPath).size, 'bytes');
@@ -22,8 +24,16 @@ if (process.env.YOUTUBE_COOKIES_BASE64) {
   // 檢查 cookies 內容
   const lines = cookiesContent.split('\n');
   console.log('cookies.txt 總行數:', lines.length);
+  console.log('cookies.txt 換行符已標準化為 LF');
   console.log('cookies.txt 前 5 行:');
   lines.slice(0, 5).forEach((line, i) => console.log(`  ${i + 1}: ${line}`));
+
+  // 確認文件真的存在
+  if (fs.existsSync(cookiesPath)) {
+    console.log('✓ cookies.txt 檔案確認存在');
+  } else {
+    console.log('✗ 錯誤：cookies.txt 檔案不存在！');
+  }
 
   // 檢查是否包含重要的 cookies
   const importantCookies = ['LOGIN_INFO', 'SID', 'HSID', 'SSID', '__Secure-1PSID'];
