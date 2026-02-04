@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..a1c2d3e 100644
+index b17b126..b5298c0 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -125,8 +125,10 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
@@ -35,12 +35,11 @@ index b17b126..a1c2d3e 100644
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,17 +174,68 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,18 +174,41 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
 -    const info = await json(song.url, {
-+
 +    const cookiesPath = this.cookies || song.plugin?.cookies;
 +    const baseFlags = {
        dumpSingleJson: true,
@@ -55,61 +54,34 @@ index b17b126..a1c2d3e 100644
 -    });
 +      ignoreNoFormatsError: true
 +    };
-+
 +    let info = null;
 +    let lastError = null;
-+
-+    // Try with cookies first (required for server environments due to bot detection)
 +    if (cookiesPath) {
-+      console.log("[YtDlpPlugin] Attempt 1: with cookies");
 +      info = await json(song.url, { ...baseFlags, cookies: cookiesPath }).catch((e) => {
-+        console.log("[YtDlpPlugin] Attempt 1 failed:", e.message || e);
 +        lastError = e;
 +        return null;
 +      });
 +    }
-+
-+    // Fallback: try without cookies
 +    if (!info) {
-+      console.log("[YtDlpPlugin] Attempt 2: without cookies");
 +      info = await json(song.url, baseFlags).catch((e) => {
-+        console.log("[YtDlpPlugin] Attempt 2 failed:", e.message || e);
 +        lastError = e;
 +        return null;
 +      });
 +    }
-+
 +    if (!info) {
 +      throw new import_distube.DisTubeError("YTDLP_ERROR", `${lastError?.stderr || lastError?.message || lastError}`);
 +    }
-+
      if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
-+
-+    console.log("[YtDlpPlugin] info.url:", info.url ? "exists" : "undefined");
-+    console.log("[YtDlpPlugin] formats count:", info.formats?.length || 0);
-+    if (info.formats?.length > 0) {
-+      console.log("[YtDlpPlugin] First 3 formats:", info.formats.slice(0, 3).map(f => ({ id: f.format_id, url: !!f.url, acodec: f.acodec, vcodec: f.vcodec })));
-+    }
-+
 +    if (!info.url) {
-+      // Filter out storyboard formats (sb0, sb1, sb2, sb3) - they are just thumbnails
 +      const playableFormats = info.formats?.filter(f => f.url && !f.format_id?.startsWith('sb')) || [];
-+      console.log("[YtDlpPlugin] Playable formats (excluding storyboard):", playableFormats.length);
-+
-+      // Try to get URL from formats array - prefer audio formats
 +      const format = playableFormats.find(f => f.acodec && f.acodec !== 'none')
 +        || playableFormats.find(f => f.acodec !== 'none' || f.vcodec !== 'none')
 +        || playableFormats[0];
 +      if (format?.url) {
-+        console.log("[YtDlpPlugin] Using format:", format.format_id, "acodec:", format.acodec, "vcodec:", format.vcodec);
 +        return format.url;
 +      }
-+
-+      // If no playable format found with cookies, the cookies might be invalid
-+      console.log("[YtDlpPlugin] No playable format found. Cookies may be expired or invalid.");
-+      throw new import_distube.DisTubeError("YTDLP_ERROR", "No playable format found - cookies may be expired. Please update your cookies.");
++      throw new import_distube.DisTubeError("YTDLP_ERROR", "No playable format found - cookies may be expired");
 +    }
-+
-+    console.log("[YtDlpPlugin] Success, got stream URL");
      return info.url;
    }
+   getRelatedSongs() {
