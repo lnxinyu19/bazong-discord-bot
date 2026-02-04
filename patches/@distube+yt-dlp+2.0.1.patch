@@ -35,7 +35,7 @@ index b17b126..a1c2d3e 100644
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,17 +174,54 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,17 +174,62 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
@@ -85,11 +85,19 @@ index b17b126..a1c2d3e 100644
 +
      if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
 +
++    console.log("[YtDlpPlugin] info.url:", info.url ? "exists" : "undefined");
++    console.log("[YtDlpPlugin] formats count:", info.formats?.length || 0);
++    if (info.formats?.length > 0) {
++      console.log("[YtDlpPlugin] First 3 formats:", info.formats.slice(0, 3).map(f => ({ id: f.format_id, url: !!f.url, acodec: f.acodec, vcodec: f.vcodec })));
++    }
++
 +    if (!info.url) {
-+      // Try to get URL from formats array
-+      const format = info.formats?.find(f => f.url && (f.acodec !== 'none' || f.vcodec !== 'none'));
++      // Try to get URL from formats array - prefer audio formats
++      const format = info.formats?.find(f => f.url && f.acodec && f.acodec !== 'none')
++        || info.formats?.find(f => f.url && (f.acodec !== 'none' || f.vcodec !== 'none'))
++        || info.formats?.find(f => f.url);
 +      if (format?.url) {
-+        console.log("[YtDlpPlugin] Using format:", format.format_id);
++        console.log("[YtDlpPlugin] Using format:", format.format_id, "url exists:", !!format.url);
 +        return format.url;
 +      }
 +      throw new import_distube.DisTubeError("YTDLP_ERROR", "No playable format found");
