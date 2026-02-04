@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..e48b316 100644
+index b17b126..4fd28ac 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -125,8 +125,10 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
@@ -23,17 +23,19 @@ index b17b126..e48b316 100644
        dumpSingleJson: true,
        noWarnings: true,
 -      noCallHome: true,
-       preferFreeFormats: true,
+-      preferFreeFormats: true,
        skipDownload: true,
-       simulate: true
+-      simulate: true
 -    }).catch((e2) => {
++      simulate: true,
++      format: "ba/b"
 +    };
 +    if (this.cookies) flags.cookies = this.cookies;
 +    const info = await json(url, flags).catch((e2) => {
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,15 +174,16 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,15 +174,15 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
@@ -42,11 +44,12 @@ index b17b126..e48b316 100644
        dumpSingleJson: true,
        noWarnings: true,
 -      noCallHome: true,
-       preferFreeFormats: true,
+-      preferFreeFormats: true,
        skipDownload: true,
        simulate: true,
-       format: "ba/ba*"
+-      format: "ba/ba*"
 -    }).catch((e2) => {
++      format: "ba/b"
 +    };
 +    if (this.cookies) flags.cookies = this.cookies;
 +    const info = await json(song.url, flags).catch((e2) => {
