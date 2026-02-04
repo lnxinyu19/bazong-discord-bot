@@ -28,9 +28,13 @@ if (process.env.YOUTUBE_COOKIES_BASE64) {
   console.log('cookies.txt 前 5 行:');
   lines.slice(0, 5).forEach((line, i) => console.log(`  ${i + 1}: ${line}`));
 
-  // 確認文件真的存在
+  // 確認文件真的存在並驗證內容
   if (fs.existsSync(cookiesPath)) {
     console.log('✓ cookies.txt 檔案確認存在');
+    // 驗證寫入後重新讀取的內容是否一致
+    const verifyContent = fs.readFileSync(cookiesPath, 'utf-8');
+    console.log('寫入後重新讀取的檔案大小:', verifyContent.length, 'chars');
+    console.log('內容 MD5 (前100字元):', verifyContent.substring(0, 100));
   } else {
     console.log('✗ 錯誤：cookies.txt 檔案不存在！');
   }
@@ -59,6 +63,19 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ],
 });
+
+// 驗證 cookies 檔案在 DisTube 初始化時是否存在
+console.log('DisTube 初始化時 cookies 路徑:', cookiesPath);
+console.log('DisTube 初始化時 cookies 檔案存在:', fs.existsSync(cookiesPath));
+
+// 檢查 yt-dlp 版本
+const { execSync } = require('child_process');
+try {
+  const ytdlpVersion = execSync('yt-dlp --version', { encoding: 'utf-8' }).trim();
+  console.log('yt-dlp 版本:', ytdlpVersion);
+} catch (e) {
+  console.log('無法獲取 yt-dlp 版本:', e.message);
+}
 
 // 初始化 DisTube
 const distube = new DisTube(client, {
