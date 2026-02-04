@@ -35,7 +35,7 @@ index b17b126..a1c2d3e 100644
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
      if (isPlaylist(info)) {
-@@ -171,17 +174,35 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,17 +174,54 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
@@ -47,36 +47,54 @@ index b17b126..a1c2d3e 100644
        noWarnings: true,
 -      noCallHome: true,
 -      preferFreeFormats: true,
--      skipDownload: true,
+       skipDownload: true,
 -      simulate: true,
 -      format: "ba/ba*"
 -    }).catch((e2) => {
 -      throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
 -    });
-+      skipDownload: true
++      ignoreNoFormatsError: true
 +    };
 +
-+    // Try without cookies first
-+    console.log("[YtDlpPlugin] Attempt 1: without cookies");
-+    let firstError = null;
-+    let info = await json(song.url, baseFlags).catch((e) => {
-+      firstError = e;
-+      console.log("[YtDlpPlugin] Attempt 1 failed:", e.message || e);
-+      return null;
-+    });
++    let info = null;
++    let lastError = null;
 +
-+    // Retry with cookies if failed
-+    if (!info && cookiesPath) {
-+      console.log("[YtDlpPlugin] Attempt 2: with cookies");
-+      info = await json(song.url, { ...baseFlags, cookies: cookiesPath }).catch((e2) => {
-+        console.log("[YtDlpPlugin] Attempt 2 failed:", e2.message || e2);
-+        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
++    // Try with cookies first (required for server environments due to bot detection)
++    if (cookiesPath) {
++      console.log("[YtDlpPlugin] Attempt 1: with cookies");
++      info = await json(song.url, { ...baseFlags, cookies: cookiesPath }).catch((e) => {
++        console.log("[YtDlpPlugin] Attempt 1 failed:", e.message || e);
++        lastError = e;
++        return null;
 +      });
-+    } else if (!info) {
-+      throw new import_distube.DisTubeError("YTDLP_ERROR", `Failed to get stream URL: ${firstError?.message || firstError}`);
++    }
++
++    // Fallback: try without cookies
++    if (!info) {
++      console.log("[YtDlpPlugin] Attempt 2: without cookies");
++      info = await json(song.url, baseFlags).catch((e) => {
++        console.log("[YtDlpPlugin] Attempt 2 failed:", e.message || e);
++        lastError = e;
++        return null;
++      });
++    }
++
++    if (!info) {
++      throw new import_distube.DisTubeError("YTDLP_ERROR", `${lastError?.stderr || lastError?.message || lastError}`);
 +    }
 +
      if (isPlaylist(info)) throw new import_distube.DisTubeError("YTDLP_ERROR", "Cannot get stream URL of a entire playlist");
++
++    if (!info.url) {
++      // Try to get URL from formats array
++      const format = info.formats?.find(f => f.url && (f.acodec !== 'none' || f.vcodec !== 'none'));
++      if (format?.url) {
++        console.log("[YtDlpPlugin] Using format:", format.format_id);
++        return format.url;
++      }
++      throw new import_distube.DisTubeError("YTDLP_ERROR", "No playable format found");
++    }
++
 +    console.log("[YtDlpPlugin] Success, got stream URL");
      return info.url;
    }
