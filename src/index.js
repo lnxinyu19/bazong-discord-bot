@@ -15,49 +15,74 @@ const fs = require('fs');
 const path = require('path');
 
 // 從環境變數生成 cookies 檔案（用於 Zeabur 等 PaaS 平台）
-const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
-console.log('Cookies 檔案路徑:', cookiesPath);
+// ytdl-core 需要 JSON 格式的 cookies
+const cookiesJsonPath = path.join(__dirname, '..', 'cookies.json');
+const cookiesTxtPath = path.join(__dirname, '..', 'cookies.txt');
+console.log('Cookies JSON 檔案路徑:', cookiesJsonPath);
 
-if (process.env.YOUTUBE_COOKIES_BASE64) {
-  // 使用 Base64 編碼的 cookies（推薦，可保留換行符）
-  let cookiesContent = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64, 'base64').toString('utf-8');
-  // 確保使用 Unix 換行符 (LF)，避免 CRLF 導致 yt-dlp 解析失敗
-  cookiesContent = cookiesContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  fs.writeFileSync(cookiesPath, cookiesContent);
-  console.log('已從 Base64 環境變數生成 cookies.txt');
-  console.log('cookies.txt 檔案大小:', fs.statSync(cookiesPath).size, 'bytes');
+let parsedCookies = null;
 
-  // 檢查 cookies 內容
-  const lines = cookiesContent.split('\n');
-  console.log('cookies.txt 總行數:', lines.length);
-  console.log('cookies.txt 換行符已標準化為 LF');
-  console.log('cookies.txt 前 5 行:');
-  lines.slice(0, 5).forEach((line, i) => console.log(`  ${i + 1}: ${line}`));
+// 優先使用 JSON 格式的 cookies
+if (process.env.YOUTUBE_COOKIES_JSON_BASE64) {
+  // JSON 格式的 cookies（推薦）
+  const cookiesJson = Buffer.from(process.env.YOUTUBE_COOKIES_JSON_BASE64, 'base64').toString('utf-8');
+  fs.writeFileSync(cookiesJsonPath, cookiesJson);
+  console.log('已從 JSON Base64 環境變數生成 cookies.json');
 
-  // 確認文件真的存在並驗證內容
-  if (fs.existsSync(cookiesPath)) {
-    console.log('✓ cookies.txt 檔案確認存在');
-    // 驗證寫入後重新讀取的內容是否一致
-    const verifyContent = fs.readFileSync(cookiesPath, 'utf-8');
-    console.log('寫入後重新讀取的檔案大小:', verifyContent.length, 'chars');
-    console.log('內容 MD5 (前100字元):', verifyContent.substring(0, 100));
-  } else {
-    console.log('✗ 錯誤：cookies.txt 檔案不存在！');
+  try {
+    parsedCookies = JSON.parse(cookiesJson);
+    console.log('✓ cookies 解析成功，數量:', parsedCookies.length);
+  } catch (e) {
+    console.log('✗ cookies.json 解析失敗:', e.message);
   }
+} else if (fs.existsSync(cookiesJsonPath)) {
+  // 使用本地 cookies.json 檔案
+  console.log('使用本地 cookies.json 檔案');
+  try {
+    parsedCookies = JSON.parse(fs.readFileSync(cookiesJsonPath, 'utf-8'));
+    console.log('✓ cookies 解析成功，數量:', parsedCookies.length);
+  } catch (e) {
+    console.log('✗ cookies.json 解析失敗:', e.message);
+  }
+} else if (process.env.YOUTUBE_COOKIES_BASE64) {
+  // 嘗試使用 Netscape 格式 cookies（向後相容）
+  console.log('注意: 使用 Netscape 格式 cookies，自動轉換為 JSON 格式');
+  let cookiesContent = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64, 'base64').toString('utf-8');
+  cookiesContent = cookiesContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  fs.writeFileSync(cookiesTxtPath, cookiesContent);
+  console.log('已從 Base64 環境變數生成 cookies.txt');
 
-  // 檢查是否包含重要的 cookies
-  const importantCookies = ['LOGIN_INFO', 'SID', 'HSID', 'SSID', '__Secure-1PSID'];
-  importantCookies.forEach(name => {
-    const found = lines.some(line => line.includes(name));
-    console.log(`  ${name}: ${found ? '✓ 存在' : '✗ 不存在'}`);
-  });
-} else if (process.env.YOUTUBE_COOKIES) {
-  // 直接使用純文字 cookies
-  fs.writeFileSync(cookiesPath, process.env.YOUTUBE_COOKIES);
-  console.log('已從環境變數生成 cookies.txt');
-  console.log('cookies.txt 檔案大小:', fs.statSync(cookiesPath).size, 'bytes');
+  // 將 Netscape 格式轉換為 JSON 格式
+  try {
+    parsedCookies = parseNetscapeCookies(cookiesContent);
+    console.log('✓ 從 Netscape 格式轉換成功，cookies 數量:', parsedCookies.length);
+  } catch (e) {
+    console.log('✗ Netscape cookies 轉換失敗:', e.message);
+  }
 } else {
   console.log('警告: YOUTUBE_COOKIES 環境變數未設定，點歌功能可能無法使用');
+}
+
+// 將 Netscape 格式 cookies 轉換為 JSON 格式
+function parseNetscapeCookies(content) {
+  const cookies = [];
+  const lines = content.split('\n');
+  for (const line of lines) {
+    if (line.startsWith('#') || !line.trim()) continue;
+    const parts = line.split('\t');
+    if (parts.length >= 7) {
+      cookies.push({
+        domain: parts[0],
+        hostOnly: parts[1] !== 'TRUE',
+        path: parts[2],
+        secure: parts[3] === 'TRUE',
+        expirationDate: parseInt(parts[4]) || undefined,
+        name: parts[5],
+        value: parts[6],
+      });
+    }
+  }
+  return cookies;
 }
 
 const client = new Client({
@@ -70,31 +95,22 @@ const client = new Client({
   ],
 });
 
-// 驗證 cookies 檔案在 DisTube 初始化時是否存在
-console.log('DisTube 初始化時 cookies 路徑:', cookiesPath);
-console.log('DisTube 初始化時 cookies 檔案存在:', fs.existsSync(cookiesPath));
+// 驗證 cookies 狀態
+console.log('DisTube 初始化時 cookies 狀態:', parsedCookies ? `已解析 ${parsedCookies.length} 個` : '未設定');
 
-// 檢查 yt-dlp 版本
-const { execSync } = require('child_process');
-try {
-  const ytdlpVersion = execSync('yt-dlp --version', { encoding: 'utf-8' }).trim();
-  console.log('yt-dlp 版本:', ytdlpVersion);
-} catch (e) {
-  console.log('無法獲取 yt-dlp 版本:', e.message);
-}
-
-// 初始化 DisTube
+// 初始化 DisTube（使用 @distube/yt-dlp 插件）
 const distube = new DisTube(client, {
   emitNewSongOnly: true,
   plugins: [
     new YtDlpPlugin({
       update: true,
-      cookies: cookiesPath,
+      cookies: cookiesTxtPath,
     }),
   ],
   ffmpeg: { path: ffmpegPath },
 });
 client.distube = distube;
+console.log('✓ 使用 YtDlpPlugin (cookies 路徑:', cookiesTxtPath, ')');
 
 // 載入指令
 client.commands = new Collection();

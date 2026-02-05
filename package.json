@@ -14,7 +14,9 @@
   "description": "",
   "dependencies": {
     "@discordjs/voice": "^0.18.0",
+    "@distube/youtube": "^1.0.4",
     "@distube/yt-dlp": "^2.0.1",
+    "@distube/ytdl-core": "^4.16.12",
     "discord.js": "^14.25.1",
     "distube": "^5.2.3",
     "dotenv": "^17.2.3",

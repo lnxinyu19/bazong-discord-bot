@@ -1,5 +1,5 @@
 diff --git a/node_modules/@distube/yt-dlp/dist/index.js b/node_modules/@distube/yt-dlp/dist/index.js
-index b17b126..4aafb65 100644
+index b17b126..34b5d69 100644
 --- a/node_modules/@distube/yt-dlp/dist/index.js
 +++ b/node_modules/@distube/yt-dlp/dist/index.js
 @@ -125,8 +125,11 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
@@ -11,15 +11,16 @@ index b17b126..4aafb65 100644
 +  constructor({ update, cookies } = {}) {
      super();
 +    this.cookies = cookies || null;
-+    console.log("[YtDlpPlugin] PATCHED VERSION - cookies path:", this.cookies);
++    console.log("[YtDlpPlugin] PATCHED VERSION v2 - cookies path:", this.cookies);
      if (update ?? true) download().catch(() => void 0);
    }
    init(distube) {
-@@ -141,16 +144,27 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -141,14 +144,18 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      return true;
    }
    async resolve(url, options) {
 -    const info = await json(url, {
++    // Always use cookies if available
 +    const flags = {
        dumpSingleJson: true,
        noWarnings: true,
@@ -29,26 +30,16 @@ index b17b126..4aafb65 100644
 -      simulate: true
 -    }).catch((e2) => {
 +      flatPlaylist: true,
-+      ignoreNoFormatsError: true,
-+      extractorArgs: "youtube:player_client=android_vr"
++      ignoreNoFormatsError: true
 +    };
++    if (this.cookies) {
++      flags.cookies = this.cookies;
++    }
 +    let info = await json(url, flags).catch((e2) => {
-+      if (e2.message?.includes("Sign in to confirm") && this.cookies) {
-+        return null;
-+      }
        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
      });
-+    if (!info && this.cookies) {
-+      const cookieFlags = { ...flags, cookies: this.cookies };
-+      delete cookieFlags.extractorArgs;
-+      info = await json(url, cookieFlags).catch((e2) => {
-+        throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
-+      });
-+    }
      if (isPlaylist(info)) {
-       if (info.entries.length === 0) throw new import_distube.DisTubeError("YTDLP_ERROR", "The playlist is empty");
-       return new import_distube.Playlist(
-@@ -171,18 +185,59 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
+@@ -171,18 +178,69 @@ var YtDlpPlugin = class extends import_distube.PlayableExtractorPlugin {
      if (!song.url) {
        throw new import_distube.DisTubeError("YTDLP_PLUGIN_INVALID_SONG", "Cannot get stream url from invalid song.");
      }
@@ -56,8 +47,8 @@ index b17b126..4aafb65 100644
 +    const cookiesPath = this.cookies || song.plugin?.cookies;
 +    let info = null;
 +    let lastError = null;
-+    // Try without cookies first using android_vr client (doesn't require JS runtime)
-+    const noCookieFlags = {
++
++    const baseFlags = {
        dumpSingleJson: true,
        noWarnings: true,
 -      noCallHome: true,
@@ -67,30 +58,41 @@ index b17b126..4aafb65 100644
 -      format: "ba/ba*"
 -    }).catch((e2) => {
 -      throw new import_distube.DisTubeError("YTDLP_ERROR", `${e2.stderr || e2}`);
-+      ignoreNoFormatsError: true,
-+      extractorArgs: "youtube:player_client=android_vr"
+-    });
++      ignoreNoFormatsError: true
 +    };
-+    info = await json(song.url, noCookieFlags).catch((e) => {
-+      lastError = e;
-+      return null;
-     });
-+    // Check if we got blocked by bot detection OR only got storyboard formats
++
++    // Strategy 1: Try with cookies first (most reliable)
++    if (cookiesPath) {
++      console.log("[YtDlpPlugin] Trying with cookies first...");
++      const cookieFlags = { ...baseFlags, cookies: cookiesPath };
++      info = await json(song.url, cookieFlags).catch((e) => {
++        console.log("[YtDlpPlugin] Cookies attempt failed:", e.message?.substring(0, 100));
++        lastError = e;
++        return null;
++      });
++    }
++
++    // Strategy 2: Fallback to ios client without cookies
 +    const onlyStoryboard = info && info.formats?.every(f => f.format_id?.startsWith('sb'));
-+    if ((!info && lastError?.message?.includes("Sign in to confirm")) || onlyStoryboard) {
-+      console.log("[YtDlpPlugin] Bot detection or storyboard-only, trying with cookies...");
-+      if (cookiesPath) {
-+        const cookieFlags = {
-+          dumpSingleJson: true,
-+          noWarnings: true,
-+          skipDownload: true,
-+          ignoreNoFormatsError: true,
-+          cookies: cookiesPath
-+        };
-+        info = await json(song.url, cookieFlags).catch((e) => {
-+          lastError = e;
-+          return null;
-+        });
-+      }
++    if (!info || onlyStoryboard) {
++      console.log("[YtDlpPlugin] Trying ios client fallback...");
++      const iosFlags = { ...baseFlags, extractorArgs: "youtube:player_client=ios" };
++      info = await json(song.url, iosFlags).catch((e) => {
++        lastError = e;
++        return null;
++      });
++    }
++
++    // Strategy 3: Fallback to web client
++    const onlyStoryboard2 = info && info.formats?.every(f => f.format_id?.startsWith('sb'));
++    if (!info || onlyStoryboard2) {
++      console.log("[YtDlpPlugin] Trying web client fallback...");
++      const webFlags = { ...baseFlags, extractorArgs: "youtube:player_client=web" };
++      info = await json(song.url, webFlags).catch((e) => {
++        lastError = e;
++        return null;
++      });
 +    }
 +    if (!info) {
 +      throw new import_distube.DisTubeError("YTDLP_ERROR", `${lastError?.stderr || lastError?.message || lastError}`);
