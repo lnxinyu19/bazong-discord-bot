@@ -17,14 +17,19 @@ const client = new Client({
 });
 
 // Lavalink 節點設定
+const lavalinkHost = process.env.LAVALINK_HOST || 'localhost:2333';
+const isSecure = process.env.LAVALINK_SECURE === 'true' || lavalinkHost.includes('.zeabur.app');
+
 const Nodes = [
   {
     name: 'main',
-    url: process.env.LAVALINK_HOST || 'localhost:2333',
+    url: lavalinkHost,
     auth: process.env.LAVALINK_PASSWORD || 'youshallnotpass',
-    secure: false,
+    secure: isSecure,
   },
 ];
+
+console.log(`Lavalink 設定: url=${lavalinkHost}, secure=${isSecure}`);
 
 // 初始化 Kazagumo（Lavalink 客戶端，內建 queue）
 const kazagumo = new Kazagumo(
