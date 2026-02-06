@@ -5,26 +5,17 @@
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
-    "dev": "nodemon --ignore *.player-script.js src/index.js",
-    "postinstall": "patch-package"
+    "dev": "nodemon src/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@discordjs/voice": "^0.18.0",
-    "@distube/youtube": "^1.0.4",
-    "@distube/yt-dlp": "^2.0.1",
-    "@distube/ytdl-core": "^4.16.12",
     "discord.js": "^14.25.1",
-    "distube": "^5.2.3",
     "dotenv": "^17.2.3",
-    "ffmpeg-static": "^5.3.0",
-    "opusscript": "^0.0.8",
-    "patch-package": "^8.0.1",
-    "quickjs-emscripten": "^0.31.0",
-    "sodium-native": "^5.0.10"
+    "kazagumo": "^3.4.0",
+    "shoukaku": "^4.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
