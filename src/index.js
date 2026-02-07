@@ -49,25 +49,12 @@ function formatDuration(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// 取得音樂頻道
-async function getMusicChannel() {
-  const musicChannelId = process.env.MUSIC_CHANNEL_ID;
-  if (musicChannelId) {
-    try {
-      return await client.channels.fetch(musicChannelId);
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
 // 將 formatDuration 掛到 client 上供指令使用
 client.formatDuration = formatDuration;
 
 // Kazagumo 事件（取代 DisTube 事件）
 kazagumo.on('playerStart', async (player, track) => {
-  const channel = await getMusicChannel();
+  const channel = client.channels.cache.get(player.textId);
   if (channel) {
     channel.send(
       `正在播放：**${track.title}** - \`${formatDuration(track.length)}\`，都給我安靜聽。`,
@@ -76,11 +63,10 @@ kazagumo.on('playerStart', async (player, track) => {
 });
 
 kazagumo.on('playerEmpty', async (player) => {
-  const channel = await getMusicChannel();
+  const channel = client.channels.cache.get(player.textId);
   if (channel) {
     channel.send('歌都放完了，演唱會到此結束。要安可的話自己點歌。');
   }
-  player.destroy();
 });
 
 // Shoukaku（底層 Lavalink 連線）事件
