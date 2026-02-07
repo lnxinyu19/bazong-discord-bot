@@ -1,15 +1,16 @@
 const { getWeatherMessage } = require('./weatherService');
 
-const WEATHER_HOUR = 8;
-const WEATHER_MINUTE = 0;
+// 台灣早上 8:00 (UTC+8) = UTC 0:00
+const WEATHER_HOUR_UTC = 0;
+const WEATHER_MINUTE_UTC = 0;
 
 function calculateMsUntilNextRun() {
   const now = new Date();
   const target = new Date(now);
-  target.setHours(WEATHER_HOUR, WEATHER_MINUTE, 0, 0);
+  target.setUTCHours(WEATHER_HOUR_UTC, WEATHER_MINUTE_UTC, 0, 0);
 
   if (now >= target) {
-    target.setDate(target.getDate() + 1);
+    target.setUTCDate(target.getUTCDate() + 1);
   }
 
   return target.getTime() - now.getTime();
