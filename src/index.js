@@ -20,7 +20,7 @@ const client = new Client({
 const Nodes = [
   {
     name: 'Serenetia',
-    url: lavalinkv4.serenetia.com:443,
+    url: 'lavalinkv4.serenetia.com:443',
     auth: 'https://dsc.gg/ajidevserver',
     secure: true,
   },
