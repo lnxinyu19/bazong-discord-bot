@@ -67,7 +67,9 @@ async function handleReadButton(interaction) {
   }
 
   if (!member.roles.cache.has(readRoleId)) {
-    await member.roles.add(readRoleId);
+    await member.roles.add(readRoleId).catch(() => {
+      return interaction.editReply({ content: '身分組設定有誤，請管理員重新執行 /setup-ow。' });
+    });
   }
 
   const roleEmbed = new EmbedBuilder()
