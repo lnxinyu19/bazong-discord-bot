@@ -73,13 +73,12 @@ module.exports = {
 
     // 「選擇身分組」文字頻道：@everyone 和 待驗證 都能看，但不能傳訊息
     let roleSelectionChannel = guild.channels.cache.find(
-      (c) => c.name === '選擇身分組' && c.parentId === categoryId,
+      (c) => c.name === '選擇身分組' && c.parentId === null,
     );
     if (!roleSelectionChannel) {
       roleSelectionChannel = await guild.channels.create({
         name: '選擇身分組',
         type: ChannelType.GuildText,
-        parent: categoryId,
         permissionOverwrites: [
           { id: everyoneRole.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
           { id: unverifiedRole.id, allow: [PermissionFlagsBits.ViewChannel], deny: [PermissionFlagsBits.SendMessages] },
