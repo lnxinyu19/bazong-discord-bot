@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -8,7 +8,7 @@ module.exports = {
     const player = interaction.client.kazagumo.players.get(interaction.guildId);
 
     if (!player || !player.queue.current) {
-      return interaction.reply({ content: '現在又沒在播歌，跳什麼跳？', ephemeral: true });
+      return interaction.reply({ content: '現在又沒在播歌，跳什麼跳？', flags: MessageFlags.Ephemeral });
     }
 
     if (player.queue.length === 0) {

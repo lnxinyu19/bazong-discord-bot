@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -8,7 +8,7 @@ module.exports = {
     const player = interaction.client.kazagumo.players.get(interaction.guildId);
 
     if (!player) {
-      return interaction.reply({ content: '都沒在播了還想停？懷疑你的智商。', ephemeral: true });
+      return interaction.reply({ content: '都沒在播了還想停？懷疑你的智商。', flags: MessageFlags.Ephemeral });
     }
 
     player.destroy();

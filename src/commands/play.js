@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 // 清理 YouTube URL，移除播放清單參數
 function cleanYouTubeUrl(input) {
@@ -32,7 +32,7 @@ module.exports = {
     if (!voiceChannel) {
       return interaction.reply({
         content: '哼，連語音頻道都不進就想聽歌？沒空伺候。',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 function formatDuration(ms) {
   const totalSeconds = Math.floor(ms / 1000);
@@ -15,7 +15,7 @@ module.exports = {
     const player = interaction.client.kazagumo.players.get(interaction.guildId);
 
     if (!player || !player.queue.current) {
-      return interaction.reply({ content: '佇列是空的，耳朵正在休息。', ephemeral: true });
+      return interaction.reply({ content: '佇列是空的，耳朵正在休息。', flags: MessageFlags.Ephemeral });
     }
 
     const current = player.queue.current;

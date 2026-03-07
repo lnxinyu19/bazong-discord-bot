@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -24,14 +24,14 @@ module.exports = {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
       return interaction.reply({
         content: '哼，這個指令只有管理員能用。你算哪根蔥？',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
     const amount = interaction.options.getInteger('amount');
     const targetChannel = interaction.options.getChannel('channel') || interaction.channel;
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const deleted = await targetChannel.bulkDelete(amount, true);

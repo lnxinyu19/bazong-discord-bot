@@ -1,4 +1,4 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, MessageFlags } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const lfgRooms = require('../state/lfgRooms');
@@ -21,7 +21,7 @@ module.exports = {
         await command.execute(interaction);
       } catch (error) {
         console.error(`指令 ${interaction.commandName} 執行錯誤:`, error);
-        const reply = { content: '執行指令時發生錯誤。', ephemeral: true };
+        const reply = { content: '執行指令時發生錯誤。', flags: MessageFlags.Ephemeral };
         if (interaction.replied || interaction.deferred) {
           await interaction.followUp(reply);
         } else {
@@ -53,7 +53,7 @@ module.exports = {
 };
 
 async function handleReadButton(interaction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const config = getConfig();
   if (!config) {
@@ -88,7 +88,7 @@ async function handleReadButton(interaction) {
 async function handleRoleButton(interaction) {
   const config = getConfig();
   if (!config) {
-    return interaction.reply({ content: '系統尚未初始化，請管理員執行 /setup-ow。', ephemeral: true });
+    return interaction.reply({ content: '系統尚未初始化，請管理員執行 /setup-ow。', flags: MessageFlags.Ephemeral });
   }
 
   const keyMap = {
@@ -100,21 +100,21 @@ async function handleRoleButton(interaction) {
 
   const roleKey = keyMap[interaction.customId];
   const roleId = config.roles[roleKey];
-  if (!roleId) return interaction.reply({ content: '找不到對應的身分組。', ephemeral: true });
+  if (!roleId) return interaction.reply({ content: '找不到對應的身分組。', flags: MessageFlags.Ephemeral });
 
   const member = interaction.member;
 
   // 必須先點「已閱讀」
   const readRoleId = config.roles.read;
   if (readRoleId && !member.roles.cache.has(readRoleId)) {
-    return interaction.reply({ content: '請先點擊上方的「✅ 我已閱讀」按鈕，再來選身分組！', ephemeral: true });
+    return interaction.reply({ content: '請先點擊上方的「✅ 我已閱讀」按鈕，再來選身分組！', flags: MessageFlags.Ephemeral });
   }
 
   const hasRole = member.roles.cache.has(roleId);
 
   if (hasRole) {
     await member.roles.remove(roleId);
-    await interaction.reply({ content: `已移除身分組。`, ephemeral: true });
+    await interaction.reply({ content: `已移除身分組。`, flags: MessageFlags.Ephemeral });
   } else {
     await member.roles.add(roleId);
 
@@ -134,7 +134,7 @@ async function handleRoleButton(interaction) {
       }
     }
 
-    await interaction.reply({ content: `✅ 已獲得身分組！現在可以進入其他頻道了。`, ephemeral: true });
+    await interaction.reply({ content: `✅ 已獲得身分組！現在可以進入其他頻道了。`, flags: MessageFlags.Ephemeral });
   }
 }
 
@@ -146,15 +146,15 @@ async function handleLimitButton(interaction) {
 
   const room = lfgRooms.get(channelId);
   if (!room) {
-    return interaction.reply({ content: '這個房間已不存在。', ephemeral: true });
+    return interaction.reply({ content: '這個房間已不存在。', flags: MessageFlags.Ephemeral });
   }
   if (room.ownerId !== interaction.user.id) {
-    return interaction.reply({ content: '只有房主可以調整人數上限。', ephemeral: true });
+    return interaction.reply({ content: '只有房主可以調整人數上限。', flags: MessageFlags.Ephemeral });
   }
 
   const voiceChannel = interaction.guild.channels.cache.get(channelId);
   if (!voiceChannel) {
-    return interaction.reply({ content: '找不到語音頻道。', ephemeral: true });
+    return interaction.reply({ content: '找不到語音頻道。', flags: MessageFlags.Ephemeral });
   }
 
   const currentCount = voiceChannel.members.size;

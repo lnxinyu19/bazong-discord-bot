@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -8,11 +8,11 @@ module.exports = {
     const player = interaction.client.kazagumo.players.get(interaction.guildId);
 
     if (!player || !player.queue.current) {
-      return interaction.reply({ content: '現在根本沒在播歌，你是在指揮誰？', ephemeral: true });
+      return interaction.reply({ content: '現在根本沒在播歌，你是在指揮誰？', flags: MessageFlags.Ephemeral });
     }
 
     if (player.paused) {
-      return interaction.reply({ content: '已經暫停了，不喜歡重複的命令。', ephemeral: true });
+      return interaction.reply({ content: '已經暫停了，不喜歡重複的命令。', flags: MessageFlags.Ephemeral });
     }
 
     player.pause(true);

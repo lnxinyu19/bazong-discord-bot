@@ -6,6 +6,7 @@ const {
   ButtonStyle,
   EmbedBuilder,
   ChannelType,
+  MessageFlags,
 } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -42,7 +43,7 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const guild = interaction.guild;
     const categoryId = process.env.LFG_CATEGORY_ID;
