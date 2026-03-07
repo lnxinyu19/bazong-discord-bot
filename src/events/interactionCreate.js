@@ -60,18 +60,6 @@ async function handleReadButton(interaction) {
     return interaction.editReply({ content: '系統尚未初始化，請管理員執行 /setup-ow。' });
   }
 
-  const member = interaction.member;
-  const readRoleId = config.roles.read;
-  if (!readRoleId) {
-    return interaction.editReply({ content: '找不到「已閱讀」身分組，請管理員重新執行 /setup-ow。' });
-  }
-
-  if (!member.roles.cache.has(readRoleId)) {
-    await member.roles.add(readRoleId).catch(() => {
-      return interaction.editReply({ content: '身分組設定有誤，請管理員重新執行 /setup-ow。' });
-    });
-  }
-
   const roleEmbed = new EmbedBuilder()
     .setTitle('選擇你的 OW 角色')
     .setDescription('點擊按鈕選擇你的主要角色，再次點擊可取消，可以複選。\n選完後即可進入其他頻道。')
@@ -105,13 +93,6 @@ async function handleRoleButton(interaction) {
   if (!roleId) return interaction.reply({ content: '找不到對應的身分組。', flags: MessageFlags.Ephemeral });
 
   const member = interaction.member;
-
-  // 必須先點「已閱讀」
-  const readRoleId = config.roles.read;
-  if (readRoleId && !member.roles.cache.has(readRoleId)) {
-    return interaction.reply({ content: '請先點擊上方的「✅ 我已閱讀」按鈕，再來選身分組！', flags: MessageFlags.Ephemeral });
-  }
-
   const hasRole = member.roles.cache.has(roleId);
 
   if (hasRole) {
@@ -120,7 +101,11 @@ async function handleRoleButton(interaction) {
   } else {
     await member.roles.add(roleId);
 
-    // 第一次選角色時移除「待驗證」並發送歡迎訊息
+    const tempRoleId = process.env.TEMP_ROLE_ID;
+    if (tempRoleId && member.roles.cache.has(tempRoleId)) {
+      await member.roles.remove(tempRoleId).catch(() => {});
+    }
+
     const unverifiedId = config.roles.unverified;
     const isFirstTime = unverifiedId && member.roles.cache.has(unverifiedId);
     if (isFirstTime) {

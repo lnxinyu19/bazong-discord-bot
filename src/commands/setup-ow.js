@@ -59,10 +59,6 @@ module.exports = {
     if (!unverifiedRole) unverifiedRole = await guild.roles.create({ name: '待驗證', color: 0x99aab5 });
     roles.unverified = unverifiedRole.id;
 
-    let readRole = guild.roles.cache.find((x) => x.name === '已閱讀');
-    if (!readRole) readRole = await guild.roles.create({ name: '已閱讀', color: 0x99aab5 });
-    roles.read = readRole.id;
-
     for (const r of OW_ROLES) {
       let role = guild.roles.cache.find((x) => x.name === r.name);
       if (!role) role = await guild.roles.create({ name: r.name, color: r.color });
@@ -166,6 +162,7 @@ module.exports = {
     await interaction.editReply(
       `✅ 設定完成！\n\n` +
       `**身分組**\n待驗證 / ${OW_ROLES.map((r) => r.name).join(' / ')}\n\n` +
+      `${process.env.TEMP_ROLE_ID ? '⚠️ TEMP_ROLE_ID 已設定，舊成員領取身分組後會自動移除臨時身分組。\n\n' : ''}` +
       `**頻道**\n` +
       `選角色：<#${roleSelectionChannel.id}>\n` +
       `Hub：<#${hubChannel.id}>\n` +
