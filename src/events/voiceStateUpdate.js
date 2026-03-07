@@ -26,10 +26,10 @@ function buildControlEmbed(displayName, current, limit) {
 
 function buildLimitRow(channelId, selected) {
   return new ActionRowBuilder().addComponents(
-    [2, 3, 4, 5].map((n) =>
+    [2, 3, 4, 5, 0].map((n) =>
       new ButtonBuilder()
         .setCustomId(`ow_limit_${n}_${channelId}`)
-        .setLabel(`${n}人`)
+        .setLabel(n === 0 ? '不限制' : `${n}人`)
         .setStyle(n === selected ? ButtonStyle.Primary : ButtonStyle.Secondary),
     ),
   );

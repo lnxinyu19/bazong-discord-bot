@@ -136,6 +136,18 @@ module.exports = {
     fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 
+    const guideEmbed = new EmbedBuilder()
+      .setTitle('⚔️ 組隊大廳使用說明')
+      .setDescription(
+        '想找人？進「➕ 找人組隊」語音頻道，不用做任何事，房間自動幫你開好。\n\n' +
+        '**控制面板**出現在這個頻道，房主可以調整人數上限（2人～不限制）。\n\n' +
+        '所有人離開後房間自動刪除，不用手動收拾，我替你善後了。',
+      )
+      .setColor(0xfa7454);
+
+    const guideMsg = await textChannel.send({ embeds: [guideEmbed] });
+    await guideMsg.pin().catch(() => {});
+
     await roleSelectionChannel.bulkDelete(10).catch(() => {});
 
     // 公告 + 已閱讀按鈕

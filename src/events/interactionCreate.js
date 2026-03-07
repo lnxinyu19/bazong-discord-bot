@@ -158,8 +158,9 @@ async function handleLimitButton(interaction) {
   }
 
   const currentCount = voiceChannel.members.size;
+  const limitDisplay = limit === 0 ? '∞' : limit;
   await voiceChannel.setUserLimit(limit);
-  await voiceChannel.setName(`⚔️ ${room.ownerName}的房間 (${currentCount}/${limit})`);
+  await voiceChannel.setName(`⚔️ ${room.ownerName}的房間 (${currentCount}/${limitDisplay})`);
 
   room.limit = limit;
   lfgRooms.set(channelId, room);
@@ -168,13 +169,13 @@ async function handleLimitButton(interaction) {
     .setTitle(`⚔️ ${room.ownerName} 的組隊房間`)
     .setDescription('點擊按鈕調整人數上限')
     .setColor(0xfa7454)
-    .addFields({ name: '目前人數', value: `${currentCount}/${limit}`, inline: true });
+    .addFields({ name: '目前人數', value: `${currentCount}/${limitDisplay}`, inline: true });
 
   const row = new ActionRowBuilder().addComponents(
-    [2, 3, 4, 5].map((n) =>
+    [2, 3, 4, 5, 0].map((n) =>
       new ButtonBuilder()
         .setCustomId(`ow_limit_${n}_${channelId}`)
-        .setLabel(`${n}人`)
+        .setLabel(n === 0 ? '不限制' : `${n}人`)
         .setStyle(n === limit ? ButtonStyle.Primary : ButtonStyle.Secondary),
     ),
   );
