@@ -1,9 +1,9 @@
-require('dotenv').config();
+const fs = require('fs');
+require('dotenv').config({ path: fs.existsSync('.env.local') ? '.env.local' : '.env' });
 
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { Kazagumo } = require('kazagumo');
 const { Connectors } = require('shoukaku');
-const fs = require('fs');
 const path = require('path');
 
 const client = new Client({
@@ -26,7 +26,6 @@ const Nodes = [
   },
 ];
 
-// 初始化 Kazagumo（Lavalink 客戶端，內建 queue）
 const kazagumo = new Kazagumo(
   {
     defaultSearchEngine: 'youtube',
@@ -49,10 +48,8 @@ function formatDuration(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// 將 formatDuration 掛到 client 上供指令使用
 client.formatDuration = formatDuration;
 
-// Kazagumo 事件（取代 DisTube 事件）
 kazagumo.on('playerStart', async (player, track) => {
   const channel = client.channels.cache.get(player.textId);
   if (channel) {

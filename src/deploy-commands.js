@@ -1,7 +1,7 @@
-require('dotenv').config();
-const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: fs.existsSync('.env.local') ? '.env.local' : '.env' });
+const { REST, Routes } = require('discord.js');
 
 const commands = [];
 const commandFiles = fs
@@ -17,14 +17,14 @@ const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
 (async () => {
   try {
-    console.log(`正在註冊 ${commands.length} 個斜線指令...`);
+    const isDev = fs.existsSync('.env.local') && process.env.TEST_GUILD_ID;
+    console.log(`正在${isDev ? '【開發】Guild' : '【正式】全域'}註冊 ${commands.length} 個斜線指令...`);
 
-    // 使用全域註冊（所有伺服器都能使用，但需要等待約 1 小時才生效）
-    // 如果你想要即時生效，可以改用 guild-specific 註冊（見下方註解）
-    const data = await rest.put(
-      Routes.applicationCommands(process.env.CLIENT_ID),
-      { body: commands },
-    );
+    const route = isDev
+      ? Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.TEST_GUILD_ID)
+      : Routes.applicationCommands(process.env.CLIENT_ID);
+
+    const data = await rest.put(route, { body: commands });
 
     console.log(`成功註冊 ${data.length} 個斜線指令！`);
   } catch (error) {

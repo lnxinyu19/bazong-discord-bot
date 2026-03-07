@@ -1,16 +1,19 @@
-const welcomeMessages = require('../config/welcomeMessages');
+const fs = require('fs');
+const path = require('path');
+
+const CONFIG_PATH = path.join(__dirname, '../config/ow-setup.json');
+
+function getOwConfig() {
+  if (!fs.existsSync(CONFIG_PATH)) return null;
+  return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+}
 
 module.exports = {
   name: 'guildMemberAdd',
   async execute(member) {
-    const channelId = process.env.WELCOME_CHANNEL_ID;
-    if (!channelId) return;
-
-    const channel = member.client.channels.cache.get(channelId);
-    if (!channel) return;
-
-    const randomMsg = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-    const formatted = randomMsg.replace('{user}', `<@${member.id}>`);
-    channel.send(formatted);
+    const config = getOwConfig();
+    if (config?.roles?.unverified) {
+      await member.roles.add(config.roles.unverified).catch(() => {});
+    }
   },
 };

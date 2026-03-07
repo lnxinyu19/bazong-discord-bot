@@ -43,7 +43,6 @@ module.exports = {
     try {
       const kazagumo = interaction.client.kazagumo;
 
-      // 透過 Lavalink 搜尋曲目
       const result = await kazagumo.search(query, {
         requester: interaction.member,
       });
@@ -52,7 +51,6 @@ module.exports = {
         return interaction.editReply('找不到任何結果，換個關鍵字試試。');
       }
 
-      // 取得或建立此伺服器的 player
       let player = kazagumo.players.get(interaction.guildId);
       if (!player) {
         player = await kazagumo.createPlayer({
@@ -63,7 +61,6 @@ module.exports = {
         });
       }
 
-      // 加入曲目到佇列
       if (result.type === 'PLAYLIST') {
         player.queue.add(result.tracks);
         await interaction.editReply(
@@ -75,7 +72,6 @@ module.exports = {
         await interaction.editReply(`正在搜尋：**${query}**，感恩戴德吧。`);
       }
 
-      // 如果沒有在播放，開始播放
       if (!player.playing && !player.paused) {
         player.play();
       }

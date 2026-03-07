@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
-    "dev": "nodemon src/index.js"
+    "deploy:dev": "node src/deploy-commands.js",
+    "dev": "nodemon --ignore src/config/ src/index.js"
   },
   "keywords": [],
   "author": "",

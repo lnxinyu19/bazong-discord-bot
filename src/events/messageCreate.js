@@ -3,7 +3,6 @@ const { keywords, quotes, mediaQuotes } = require('../config/bazongQuotes');
 module.exports = {
   name: 'messageCreate',
   async execute(message) {
-    // 忽略機器人訊息
     if (message.author.bot) return;
 
     // 分享頻道：回覆圖片/影片
@@ -22,7 +21,6 @@ module.exports = {
 
     const content = message.content.toLowerCase();
 
-    // 檢查是否包含關鍵字
     const triggered = keywords.some((keyword) => content.includes(keyword.toLowerCase()));
 
     if (triggered) {
