@@ -96,10 +96,14 @@ async function handleRoleButton(interaction) {
   const hasRole = member.roles.cache.has(roleId);
 
   if (hasRole) {
-    await member.roles.remove(roleId);
+    await member.roles.remove(roleId).catch(() => {});
     await interaction.reply({ content: `已移除身分組。`, flags: MessageFlags.Ephemeral });
   } else {
-    await member.roles.add(roleId);
+    try {
+      await member.roles.add(roleId);
+    } catch {
+      return interaction.reply({ content: '身分組設定有誤，請管理員重新執行 /setup-ow。', flags: MessageFlags.Ephemeral });
+    }
 
     const tempRoleId = process.env.TEMP_ROLE_ID;
     if (tempRoleId && member.roles.cache.has(tempRoleId)) {
@@ -147,7 +151,6 @@ async function handleLimitButton(interaction) {
   const currentCount = voiceChannel.members.size;
   const limitDisplay = limit === 0 ? '∞' : limit;
   await voiceChannel.setUserLimit(limit);
-  await voiceChannel.setName(`⚔️ ${room.ownerName}的房間 (${currentCount}/${limitDisplay})`);
 
   room.limit = limit;
   lfgRooms.set(channelId, room);

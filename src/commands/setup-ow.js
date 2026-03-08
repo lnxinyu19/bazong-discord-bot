@@ -20,7 +20,13 @@ const OW_ROLES = [
   { key: 'flex',    name: '🔄 補位', color: 0xFEE75C },
 ];
 
-const ANNOUNCEMENT = `安安 相信各位加入就是想找一起玩的夥伴
+function buildAnnouncement(roles) {
+  const tank    = `<@&${roles.tank}>`;
+  const support = `<@&${roles.support}>`;
+  const dps     = `<@&${roles.dps}>`;
+  const flex    = `<@&${roles.flex}>`;
+
+  return `安安 相信各位加入就是想找一起玩的夥伴
 
 不要害羞 主動揪人
 
@@ -34,7 +40,10 @@ const ANNOUNCEMENT = `安安 相信各位加入就是想找一起玩的夥伴
 
 🔹 選完身分組即可看到其他頻道。
 
-🔹 找隊友不僅限超越手錶的隊友，其他遊戲也歡迎大家。`;
+🔹 找隊友不僅限超越手錶的隊友，其他遊戲也歡迎大家。
+
+💡 想找隊友？去組隊大廳 tag ${tank} ${support} ${dps} ${flex} 喊人，有緣自然來。`;
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -150,7 +159,7 @@ module.exports = {
     // 公告 + 已閱讀按鈕
     const announcementEmbed = new EmbedBuilder()
       .setTitle('📋 入群須知')
-      .setDescription(ANNOUNCEMENT)
+      .setDescription(buildAnnouncement(roles))
       .setColor(0xfa7454);
 
     const readRow = new ActionRowBuilder().addComponents(

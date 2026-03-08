@@ -49,7 +49,7 @@ module.exports = {
       const category = guild.channels.cache.get(process.env.LFG_CATEGORY_ID);
 
       const voiceChannel = await guild.channels.create({
-        name: `⚔️ ${member.displayName}的房間 (1/5)`,
+        name: `⚔️ ${member.displayName}的房間`,
         type: ChannelType.GuildVoice,
         parent: category,
         userLimit: 5,
