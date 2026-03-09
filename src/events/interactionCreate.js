@@ -156,7 +156,8 @@ async function handleConfirmButton(interaction) {
     if (shouldHave && !hasRole) {
       try {
         await member.roles.add(roleId);
-      } catch {
+      } catch (err) {
+        console.error(`[handleConfirmButton] 新增身分組失敗 key=${key} roleId=${roleId} userId=${member.id}:`, err);
         assignFailed = true;
       }
     } else if (!shouldHave && hasRole) {
