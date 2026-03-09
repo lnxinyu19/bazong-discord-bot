@@ -6,9 +6,34 @@ const welcomeMessages = require('../config/welcomeMessages');
 
 const CONFIG_PATH = path.join(__dirname, '../config/ow-setup.json');
 
+const ROLE_DEFS = [
+  { customId: 'ow_role_tank',    label: '🛡️ 坦克', key: 'tank' },
+  { customId: 'ow_role_support', label: '💚 輔助', key: 'support' },
+  { customId: 'ow_role_dps',     label: '⚔️ 輸出', key: 'dps' },
+  { customId: 'ow_role_flex',    label: '🔄 補位', key: 'flex' },
+];
+
 function getConfig() {
   if (!fs.existsSync(CONFIG_PATH)) return null;
   return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+}
+
+function buildRoleRows(selectedKeys) {
+  const roleRow = new ActionRowBuilder().addComponents(
+    ROLE_DEFS.map(({ customId, label, key }) =>
+      new ButtonBuilder()
+        .setCustomId(customId)
+        .setLabel(label)
+        .setStyle(selectedKeys.includes(key) ? ButtonStyle.Primary : ButtonStyle.Secondary),
+    ),
+  );
+  const confirmRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('ow_role_confirm')
+      .setLabel('✅ 確認')
+      .setStyle(ButtonStyle.Success),
+  );
+  return [roleRow, confirmRow];
 }
 
 module.exports = {
@@ -39,8 +64,13 @@ module.exports = {
         return;
       }
 
+      if (customId === 'ow_role_confirm') {
+        await handleConfirmButton(interaction);
+        return;
+      }
+
       if (customId.startsWith('ow_role_')) {
-        await handleRoleButton(interaction);
+        await handleRoleToggle(interaction);
         return;
       }
 
@@ -57,76 +87,110 @@ async function handleReadButton(interaction) {
 
   const config = getConfig();
   if (!config) {
-    return interaction.editReply({ content: '系統尚未初始化，請管理員執行 /setup-ow。' });
+    return interaction.editReply({ content: '系統尚未初始化，請聯絡管理員 <@357462526465933313>。' });
   }
-
-  const roleEmbed = new EmbedBuilder()
-    .setTitle('選擇你的 OW 角色')
-    .setDescription('點擊按鈕選擇你的主要角色，再次點擊可取消，可以複選。\n選完後即可進入其他頻道。')
-    .setColor(0x5865F2);
-
-  const roleRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId('ow_role_tank').setLabel('🛡️ 坦克').setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId('ow_role_support').setLabel('💚 輔助').setStyle(ButtonStyle.Success),
-    new ButtonBuilder().setCustomId('ow_role_dps').setLabel('⚔️ 輸出').setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId('ow_role_flex').setLabel('🔄 補位').setStyle(ButtonStyle.Secondary),
-  );
-
-  await interaction.editReply({ embeds: [roleEmbed], components: [roleRow] });
-}
-
-async function handleRoleButton(interaction) {
-  const config = getConfig();
-  if (!config) {
-    return interaction.reply({ content: '系統尚未初始化，請管理員執行 /setup-ow。', flags: MessageFlags.Ephemeral });
-  }
-
-  const keyMap = {
-    ow_role_tank:    'tank',
-    ow_role_support: 'support',
-    ow_role_dps:     'dps',
-    ow_role_flex:    'flex',
-  };
-
-  const roleKey = keyMap[interaction.customId];
-  const roleId = config.roles[roleKey];
-  if (!roleId) return interaction.reply({ content: '找不到對應的身分組。', flags: MessageFlags.Ephemeral });
 
   const member = interaction.member;
-  const hasRole = member.roles.cache.has(roleId);
+  const currentKeys = ROLE_DEFS
+    .filter(({ key }) => {
+      const roleId = config.roles[key];
+      return roleId && member.roles.cache.has(roleId);
+    })
+    .map(({ key }) => key);
 
-  if (hasRole) {
-    await member.roles.remove(roleId).catch(() => {});
-    await interaction.reply({ content: `已移除身分組。`, flags: MessageFlags.Ephemeral });
-  } else {
-    try {
-      await member.roles.add(roleId);
-    } catch {
-      return interaction.reply({ content: '身分組設定有誤，請管理員重新執行 /setup-ow。', flags: MessageFlags.Ephemeral });
+  const embed = new EmbedBuilder()
+    .setTitle('選擇你的 OW 角色')
+    .setDescription('點擊按鈕選取或取消角色（可複選），選完後按「✅ 確認」完成設定。')
+    .setColor(0x5865F2);
+
+  await interaction.editReply({ embeds: [embed], components: buildRoleRows(currentKeys) });
+}
+
+async function handleRoleToggle(interaction) {
+  // Read current selection from button styles, then toggle the clicked one
+  const roleRow = interaction.message.components[0];
+  const clickedId = interaction.customId;
+
+  const currentKeys = roleRow.components
+    .filter(btn => btn.style === ButtonStyle.Primary)
+    .map(btn => ROLE_DEFS.find(r => r.customId === btn.customId)?.key)
+    .filter(Boolean);
+
+  const clickedDef = ROLE_DEFS.find(r => r.customId === clickedId);
+  const newKeys = currentKeys.includes(clickedDef.key)
+    ? currentKeys.filter(k => k !== clickedDef.key)
+    : [...currentKeys, clickedDef.key];
+
+  await interaction.update({ components: buildRoleRows(newKeys) });
+}
+
+async function handleConfirmButton(interaction) {
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+  const config = getConfig();
+  if (!config) {
+    return interaction.editReply({ content: '系統尚未初始化，請聯絡管理員 <@357462526465933313>。' });
+  }
+
+  const roleRow = interaction.message.components[0];
+  const selectedKeys = roleRow.components
+    .filter(btn => btn.style === ButtonStyle.Primary)
+    .map(btn => ROLE_DEFS.find(r => r.customId === btn.customId)?.key)
+    .filter(Boolean);
+
+  const member = interaction.member;
+
+  // Check first-time before modifying roles
+  const unverifiedId = config.roles.unverified;
+  const isFirstTime = unverifiedId && member.roles.cache.has(unverifiedId);
+
+  const FALLBACK_ROLE_ID = '1479733427518308384'; // 待驗證
+
+  // Apply / remove each role to match selection
+  let assignFailed = false;
+  for (const { key } of ROLE_DEFS) {
+    const roleId = config.roles[key];
+    if (!roleId) continue;
+    const shouldHave = selectedKeys.includes(key);
+    const hasRole = member.roles.cache.has(roleId);
+    if (shouldHave && !hasRole) {
+      try {
+        await member.roles.add(roleId);
+      } catch {
+        assignFailed = true;
+      }
+    } else if (!shouldHave && hasRole) {
+      await member.roles.remove(roleId).catch(() => {});
     }
+  }
 
+  if (assignFailed) {
+    await member.roles.add(FALLBACK_ROLE_ID).catch(() => {});
+    return interaction.editReply({ content: '⚠️ 身分組設定時發生錯誤，已暫時給予待驗證身分組，請聯絡管理員 <@357462526465933313>。' });
+  }
+
+  if (isFirstTime && selectedKeys.length > 0) {
     const tempRoleId = process.env.TEMP_ROLE_ID;
-    if (tempRoleId && member.roles.cache.has(tempRoleId)) {
-      await member.roles.remove(tempRoleId).catch(() => {});
-    }
+    if (tempRoleId) await member.roles.remove(tempRoleId).catch(() => {});
+    await member.roles.remove(unverifiedId).catch(() => {});
 
-    const unverifiedId = config.roles.unverified;
-    const isFirstTime = unverifiedId && member.roles.cache.has(unverifiedId);
-    if (isFirstTime) {
-      await member.roles.remove(unverifiedId);
-
-      const welcomeChannelId = process.env.WELCOME_CHANNEL_ID;
-      if (welcomeChannelId) {
-        const welcomeChannel = interaction.client.channels.cache.get(welcomeChannelId);
-        if (welcomeChannel) {
-          const randomMsg = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-          await welcomeChannel.send(randomMsg.replace('{user}', `<@${member.id}>`));
-        }
+    const welcomeChannelId = process.env.WELCOME_CHANNEL_ID;
+    if (welcomeChannelId) {
+      const welcomeChannel = interaction.client.channels.cache.get(welcomeChannelId);
+      if (welcomeChannel) {
+        const randomMsg = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
+        await welcomeChannel.send(randomMsg.replace('{user}', `<@${member.id}>`));
       }
     }
 
-    await interaction.reply({ content: `✅ 已獲得身分組！現在可以進入其他頻道了。`, flags: MessageFlags.Ephemeral });
+    return interaction.editReply({ content: '✅ 已獲得身分組！現在可以進入其他頻道了。' });
   }
+
+  if (selectedKeys.length === 0) {
+    return interaction.editReply({ content: '沒有選擇任何角色，設定未變更。' });
+  }
+
+  await interaction.editReply({ content: '✅ 角色設定已更新。' });
 }
 
 async function handleLimitButton(interaction) {

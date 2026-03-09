@@ -80,10 +80,12 @@ module.exports = {
     const owRoleObjects = OW_ROLES.map((r) => guild.roles.cache.get(roles[r.key]));
 
     // 「選擇身分組」文字頻道：@everyone 和 待驗證 都能看，但不能傳訊息
+    let isNewRoleChannel = false;
     let roleSelectionChannel = guild.channels.cache.find(
       (c) => c.name === '選擇身分組' && c.parentId === null,
     );
     if (!roleSelectionChannel) {
+      isNewRoleChannel = true;
       roleSelectionChannel = await guild.channels.create({
         name: '選擇身分組',
         type: ChannelType.GuildText,
@@ -122,10 +124,12 @@ module.exports = {
       })),
     ];
 
+    let isNewTextChannel = false;
     let textChannel = guild.channels.cache.find(
       (c) => c.name === '組隊大廳' && c.parentId === categoryId,
     );
     if (!textChannel) {
+      isNewTextChannel = true;
       textChannel = await guild.channels.create({
         name: '組隊大廳',
         type: ChannelType.GuildText,
@@ -144,32 +148,34 @@ module.exports = {
     fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 
-    const guideEmbed = new EmbedBuilder()
-      .setTitle('⚔️ 組隊大廳使用說明')
-      .setDescription(
-        '想找人？進「➕ 找人組隊」語音頻道，不用做任何事，房間自動幫你開好。\n\n' +
-        '**控制面板**出現在這個頻道，房主可以調整人數上限（2人～不限制）。\n\n' +
-        '所有人離開後房間自動刪除，不用手動收拾，我替你善後了。\n\n' +
-        '-# 此頻道的訊息會發送通知，嫌吵的話自己去關。',
-      )
-      .setColor(0xfa7454);
+    if (isNewTextChannel) {
+      const guideEmbed = new EmbedBuilder()
+        .setTitle('⚔️ 組隊大廳使用說明')
+        .setDescription(
+          '想找人？進「➕ 找人組隊」語音頻道，不用做任何事，房間自動幫你開好。\n\n' +
+          '**控制面板**出現在這個頻道，房主可以調整人數上限（2人～不限制）。\n\n' +
+          '所有人離開後房間自動刪除，不用手動收拾，我替你善後了。\n\n' +
+          '-# 此頻道的訊息會發送通知，嫌吵的話自己去關。',
+        )
+        .setColor(0xfa7454);
 
-    const guideMsg = await textChannel.send({ embeds: [guideEmbed] });
-    await guideMsg.pin().catch(() => {});
+      const guideMsg = await textChannel.send({ embeds: [guideEmbed] });
+      await guideMsg.pin().catch(() => {});
+    }
 
-    await roleSelectionChannel.bulkDelete(10).catch(() => {});
+    if (isNewRoleChannel) {
+      // 公告 + 已閱讀按鈕
+      const announcementEmbed = new EmbedBuilder()
+        .setTitle('📋 入群須知')
+        .setDescription(buildAnnouncement(roles))
+        .setColor(0xfa7454);
 
-    // 公告 + 已閱讀按鈕
-    const announcementEmbed = new EmbedBuilder()
-      .setTitle('📋 入群須知')
-      .setDescription(buildAnnouncement(roles))
-      .setColor(0xfa7454);
+      const readRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('ow_read').setLabel('✅ 我已閱讀').setStyle(ButtonStyle.Success),
+      );
 
-    const readRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('ow_read').setLabel('✅ 我已閱讀').setStyle(ButtonStyle.Success),
-    );
-
-    await roleSelectionChannel.send({ embeds: [announcementEmbed], components: [readRow] });
+      await roleSelectionChannel.send({ embeds: [announcementEmbed], components: [readRow] });
+    }
 
     await interaction.editReply(
       `✅ 設定完成！\n\n` +
