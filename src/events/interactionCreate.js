@@ -36,6 +36,13 @@ function buildRoleRows(selectedKeys) {
   return [roleRow, confirmRow];
 }
 
+// 忽略雙實例重疊時的 40060，其他錯誤照常 log
+function safeHandle(label, fn) {
+  return fn().catch((err) => {
+    if (err.code !== 40060) console.error(`[${label}] 錯誤:`, err);
+  });
+}
+
 module.exports = {
   name: 'interactionCreate',
   async execute(interaction) {
@@ -60,22 +67,22 @@ module.exports = {
       const { customId } = interaction;
 
       if (customId === 'ow_read') {
-        await handleReadButton(interaction);
+        await safeHandle('handleReadButton', () => handleReadButton(interaction));
         return;
       }
 
       if (customId === 'ow_role_confirm') {
-        await handleConfirmButton(interaction);
+        await safeHandle('handleConfirmButton', () => handleConfirmButton(interaction));
         return;
       }
 
       if (customId.startsWith('ow_role_')) {
-        await handleRoleToggle(interaction);
+        await safeHandle('handleRoleToggle', () => handleRoleToggle(interaction));
         return;
       }
 
       if (customId.startsWith('ow_limit_')) {
-        await handleLimitButton(interaction);
+        await safeHandle('handleLimitButton', () => handleLimitButton(interaction));
         return;
       }
     }
@@ -107,7 +114,6 @@ async function handleReadButton(interaction) {
 }
 
 async function handleRoleToggle(interaction) {
-  // Read current selection from button styles, then toggle the clicked one
   const roleRow = interaction.message.components[0];
   const clickedId = interaction.customId;
 
@@ -121,7 +127,8 @@ async function handleRoleToggle(interaction) {
     ? currentKeys.filter(k => k !== clickedDef.key)
     : [...currentKeys, clickedDef.key];
 
-  await interaction.update({ components: buildRoleRows(newKeys) });
+  await interaction.deferUpdate();
+  await interaction.editReply({ components: buildRoleRows(newKeys) });
 }
 
 async function handleConfirmButton(interaction) {
