@@ -19,10 +19,10 @@ const client = new Client({
 // Lavalink 節點設定
 const Nodes = [
   {
-    name: 'Serenetia',
-    url: 'lavalinkv4.serenetia.com:443',
-    auth: 'https://dsc.gg/ajidevserver',
-    secure: true,
+    name: 'Main',
+    url: process.env.LAVALINK_HOST,
+    auth: process.env.LAVALINK_PASSWORD,
+    secure: process.env.LAVALINK_SECURE === 'true',
   },
 ];
 
@@ -36,6 +36,10 @@ const kazagumo = new Kazagumo(
   },
   new Connectors.DiscordJS(client),
   Nodes,
+  {
+    reconnectTries: 10,
+    reconnectInterval: 5000,
+  },
 );
 
 client.kazagumo = kazagumo;
