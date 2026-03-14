@@ -229,7 +229,10 @@ async function handleLimitButton(interaction) {
 
   const embed = new EmbedBuilder()
     .setTitle(`⚔️ ${room.ownerName} 的組隊房間`)
-    .setDescription('點擊按鈕調整人數上限')
+    .setDescription(
+      '點擊按鈕調整人數上限\n\n' +
+      '-# 💡 揪人打競技的話請附上分段，好找到適合的隊友。',
+    )
     .setColor(0xfa7454)
     .addFields({ name: '目前人數', value: `${currentCount}/${limitDisplay}`, inline: true });
 

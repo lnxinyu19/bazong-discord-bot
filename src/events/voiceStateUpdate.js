@@ -17,11 +17,15 @@ function getConfig() {
 }
 
 function buildControlEmbed(displayName, current, limit) {
+  const limitDisplay = limit === 0 ? '∞' : limit;
   return new EmbedBuilder()
     .setTitle(`⚔️ ${displayName} 的組隊房間`)
-    .setDescription('點擊按鈕調整人數上限')
+    .setDescription(
+      '點擊按鈕調整人數上限\n\n' +
+      '-# 💡 揪人打競技的話請附上分段，好找到適合的隊友。',
+    )
     .setColor(0xfa7454)
-    .addFields({ name: '目前人數', value: `${current}/${limit}`, inline: true });
+    .addFields({ name: '目前人數', value: `${current}/${limitDisplay}`, inline: true });
 }
 
 function buildLimitRow(channelId, selected) {
@@ -87,12 +91,24 @@ module.exports = {
         const room = lfgRooms.get(oldState.channelId);
         lfgRooms.delete(oldState.channelId);
 
-        if (room?.textChannelId && room?.messageId) {
-          const textChannel = guild.channels.cache.get(room.textChannelId);
-          if (textChannel) {
+        const textChannelId = room?.textChannelId ?? config.textChannelId;
+        const textChannel = guild.channels.cache.get(textChannelId);
+        if (textChannel) {
+          if (room?.messageId) {
             await textChannel.messages.fetch(room.messageId)
               .then((msg) => msg.delete())
               .catch(() => {});
+          } else {
+            // Bot 重啟後 lfgRooms 為空，改用按鈕 customId 搜尋對應的控制訊息
+            const messages = await textChannel.messages.fetch({ limit: 50 }).catch(() => null);
+            if (messages) {
+              const controlMsg = messages.find((m) =>
+                m.components?.[0]?.components?.some((btn) =>
+                  btn.customId?.includes(oldState.channelId),
+                ),
+              );
+              if (controlMsg) await controlMsg.delete().catch(() => {});
+            }
           }
         }
 
