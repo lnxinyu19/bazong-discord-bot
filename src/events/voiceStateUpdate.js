@@ -78,9 +78,12 @@ module.exports = {
     }
 
     // 離開頻道 → 若空了就刪除語音頻道和組隊大廳的對應訊息
-    if (oldState.channelId && lfgRooms.has(oldState.channelId)) {
+    if (oldState.channelId) {
       const channel = oldState.channel;
       if (channel && channel.members.size === 0) {
+        const isLfgChannel = lfgRooms.has(oldState.channelId) || channel.name.startsWith('⚔️');
+        if (!isLfgChannel) return;
+
         const room = lfgRooms.get(oldState.channelId);
         lfgRooms.delete(oldState.channelId);
 
