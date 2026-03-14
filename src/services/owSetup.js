@@ -52,6 +52,7 @@ function buildAnnouncement(roles) {
  */
 async function runOwSetup(guild) {
   const categoryId = process.env.LFG_CATEGORY_ID;
+  await guild.channels.fetch();
   const category = guild.channels.cache.get(categoryId);
   if (!category) throw new Error('找不到分類，請確認 LFG_CATEGORY_ID 設定正確。');
 
