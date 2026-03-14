@@ -162,6 +162,13 @@ async function handleConfirmButton(interaction) {
     const hasRole = member.roles.cache.has(roleId);
     if (shouldHave && !hasRole) {
       try {
+        // Verify role still exists before adding
+        const roleExists = interaction.guild.roles.cache.has(roleId);
+        if (!roleExists) {
+          console.error(`[handleConfirmButton] 身分組不存在 key=${key} roleId=${roleId}`);
+          assignFailed = true;
+          continue;
+        }
         await member.roles.add(roleId);
       } catch (err) {
         console.error(`[handleConfirmButton] 新增身分組失敗 key=${key} roleId=${roleId} userId=${member.id}:`, err);
