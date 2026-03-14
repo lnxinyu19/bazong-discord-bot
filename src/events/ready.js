@@ -11,6 +11,7 @@ module.exports = {
     if (process.env.LFG_CATEGORY_ID) {
       const guild = client.guilds.cache.first();
       if (guild) {
+        console.log(`[OW Setup] 使用伺服器：${guild.id} (${guild.name})`);
         runOwSetup(guild)
           .then(() => console.log('[OW Setup] 自動初始化完成'))
           .catch((err) => console.error('[OW Setup] 自動初始化失敗:', err));
