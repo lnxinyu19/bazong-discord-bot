@@ -54,7 +54,11 @@ async function runOwSetup(guild) {
   const categoryId = process.env.LFG_CATEGORY_ID;
   await guild.channels.fetch();
   const category = guild.channels.cache.get(categoryId);
-  if (!category) throw new Error('找不到分類，請確認 LFG_CATEGORY_ID 設定正確。');
+  if (!category) {
+    console.error(`[OW Setup] LFG_CATEGORY_ID="${categoryId}"，伺服器頻道清單：`);
+    guild.channels.cache.forEach((c) => console.error(`  ${c.id} ${c.type} ${c.name}`));
+    throw new Error('找不到分類，請確認 LFG_CATEGORY_ID 設定正確。');
+  }
 
   const roles = {};
 
